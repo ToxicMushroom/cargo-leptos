@@ -35,7 +35,10 @@ pub async fn front(
         fs::create_dir_all(&pkg_dir).await?;
 
         let (envs, line, mut process) = front_cargo_process("build", true, &proj)?;
-        let stdout = process.stdout.take().expect("stdout is not captured");
+        let Some(stdout) = process.stdout.take() else {
+            println!("{:?}", proj.lib.stdout_file);
+            panic!("stdout-lib is not captured");
+        };
 
         let read_stdout: JoinHandle<std::io::Result<()>> = spawn_cargo_log_writer(
             stdout,

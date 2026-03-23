@@ -28,8 +28,11 @@ pub async fn server(
         }
 
         let (envs, line, mut process) = server_cargo_process("build", &proj)?;
-        let stdout = process.stdout.take().expect("stdout is not captured");
-
+        let Some(stdout) = process.stdout.take() else {
+            println!("{:?}", proj.bin.stdout_file);
+            panic!("stdout-bin is not captured");
+        };
+        
         let read_stdout: JoinHandle<std::io::Result<()>> = spawn_cargo_log_writer(
             stdout,
             proj.bin.stdout_file.clone(),

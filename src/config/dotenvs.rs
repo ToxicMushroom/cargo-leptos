@@ -34,7 +34,10 @@ pub fn overlay_env(conf: &mut ProjectConfig, dotenvs: Option<Vec<(String, String
 }
 
 fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)>) -> Result<()> {
+    info!("Overlaying env variables");
     for (key, val) in envs {
+        info!("Overlaying {key}={val}");
+
         match key.as_str() {
             "LEPTOS_OUTPUT_NAME" => conf.output_name = val,
             "LEPTOS_SITE_ROOT" => conf.site_root = Utf8PathBuf::from(val),
