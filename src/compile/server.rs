@@ -84,6 +84,7 @@ pub fn server_cargo_process_with_args(
         .expect("Failed to get bin command. This should default to cargo");
     let mut command: Command = Command::new(cargo_command);
     if proj.bin.stdout_file.is_some() {
+        info!("Piping to stdout file");
         command.stdout(Stdio::piped());
     }
 

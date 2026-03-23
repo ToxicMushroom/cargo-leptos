@@ -88,6 +88,7 @@ pub fn front_cargo_process_with_args(
 ) -> Result<(String, String, Child)> {
     let mut command = Command::new("cargo");
     if proj.lib.stdout_file.is_some() {
+        info!("Piping front to stdout file");
         command.stdout(Stdio::piped());
     }
     let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command, additional_args);
