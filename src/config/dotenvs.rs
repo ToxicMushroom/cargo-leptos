@@ -1,6 +1,7 @@
 use super::{ProjectConfig, ENV_VAR_LEPTOS_SASS_VERSION, ENV_VAR_LEPTOS_TAILWIND_VERSION};
 use crate::internal_prelude::*;
 use camino::{Utf8Path, Utf8PathBuf};
+use itertools::Itertools;
 use std::{env, fs};
 
 pub fn load_dotenvs(directory: &Utf8Path) -> Result<Option<Vec<(String, String)>>> {
@@ -53,6 +54,8 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
+            "LEPTOS_BIN_CARGO_ARGS" => conf.bin_cargo_args = Some(val.split_whitespace().map(String::from).collect::<Vec<String>>()),
+            "LEPTOS_LIB_CARGO_ARGS" => conf.lib_cargo_args = Some(val.split_whitespace().map(String::from).collect::<Vec<String>>()),
             "LEPTOS_BIN_CARGO_STDOUT_PATH" => conf.bin_cargo_stdout_path = Some(val),
             "LEPTOS_LIB_CARGO_STDOUT_PATH" => conf.lib_cargo_stdout_path = Some(val),
             "LEPTOS_JS_MINIFY" => conf.js_minify = val.parse()?,
