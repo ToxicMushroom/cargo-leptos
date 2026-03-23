@@ -5,7 +5,7 @@ use crate::{
     }, internal_prelude::*, logger::GRAY, signal::{Interrupt, Outcome, Product}, wasm_split_tools
 };
 use camino::{Utf8Path, Utf8PathBuf};
-use std::sync::Arc;
+use std::{process::Stdio, sync::Arc};
 use swc::{
     config::{IsModule, JsMinifyOptions},
     try_with_handler, BoolOrDataConfig, JsMinifyExtras,
@@ -39,7 +39,7 @@ pub async fn front(
 
         let read_stdout: JoinHandle<std::io::Result<()>> = spawn_cargo_log_writer(
             stdout,
-            proj.bin.stdout_file.clone(),
+            proj.lib.stdout_file.clone(),
             proj.bin.target_dir.clone(),
         );
         
@@ -87,6 +87,9 @@ pub fn front_cargo_process_with_args(
     additional_args: Option<&[String]>,
 ) -> Result<(String, String, Child)> {
     let mut command = Command::new("cargo");
+    if proj.lib.stdout_file.is_some() {
+        command.stdout(Stdio::piped());
+    }
     let (envs, line) = build_cargo_front_cmd(cmd, wasm, proj, &mut command, additional_args);
     Ok((envs, line, command.spawn()?))
 }
