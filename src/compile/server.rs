@@ -35,6 +35,7 @@ pub async fn server(
             proj.bin.stdout_file.clone(),
             proj.bin.target_dir.clone(),
         );
+        let _ = read_stdout.await?;
         debug!("CARGO SERVER COMMAND: {:?}", process);
         let process_result =
             match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
@@ -58,7 +59,6 @@ pub async fn server(
                 CommandResult::Interrupted => Ok(Outcome::Stopped),
                 CommandResult::Failure(_) => Ok(Outcome::Failed),
             };
-        let _ = read_stdout.await?;
         process_result
     })
 }

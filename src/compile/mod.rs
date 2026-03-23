@@ -10,7 +10,7 @@ mod server;
 mod style;
 mod tailwind;
 
-use std::{fs::File, io::Write, path::Path};
+use std::path::Path;
 
 pub use assets::assets;
 use camino::Utf8PathBuf;
@@ -22,9 +22,7 @@ pub use style::style;
 
 use itertools::Itertools;
 use tokio::{
-    io::AsyncReadExt,
-    process::{ChildStdout, Command},
-    task::JoinHandle,
+    fs::File, io::{AsyncBufReadExt, AsyncWriteExt, BufReader}, process::{ChildStdout, Command}, task::JoinHandle
 };
 use tracing::debug;
 
@@ -44,7 +42,7 @@ fn build_cargo_command_string(command: &Command) -> String {
 }
 
 pub fn spawn_cargo_log_writer(
-    mut stdout: ChildStdout,
+    stdout: ChildStdout,
     stdout_file: Option<Utf8PathBuf>,
     target_dir: Option<String>,
 ) -> JoinHandle<std::io::Result<()>> {
@@ -55,12 +53,17 @@ pub fn spawn_cargo_log_writer(
             };
             let stdout_file_base = target_dir.clone().unwrap_or("target".to_string());
             let stdout_file_path = Path::new(stdout_file_base.as_str()).join(stdout_file.as_str());
-            let mut file = File::create(&stdout_file_path)?;
-            let mut buff = Vec::new();
-            let _ = stdout.read_to_end(&mut buff).await?;
+            let mut file = File::create(&stdout_file_path).await?;
+            let stdout = stdout;
+            let mut reader = BufReader::new(stdout);
+            let mut line = String::new();
             debug!("CARGO PIPING STDOUT TO: {:?}", &stdout_file_path);
-
-            file.write_all(buff.as_slice())?;
+            
+            while reader.read_line(&mut line).await? > 0 {
+                file.write_all(line.as_bytes()).await?;
+                file.flush().await?;
+                line.clear();
+            }
             Ok(())
         }
     })
