@@ -53,6 +53,8 @@ fn overlay(conf: &mut ProjectConfig, envs: impl Iterator<Item = (String, String)
             "LEPTOS_BIN_TARGET_TRIPLE" => conf.bin_target_triple = Some(val),
             "LEPTOS_BIN_TARGET_DIR" => conf.bin_target_dir = Some(val),
             "LEPTOS_BIN_CARGO_COMMAND" => conf.bin_cargo_command = Some(val),
+            "LEPTOS_BIN_CARGO_STDOUT_PATH" => conf.bin_cargo_stdout_path = Some(val),
+            "LEPTOS_LIB_CARGO_STDOUT_PATH" => conf.lib_cargo_stdout_path = Some(val),
             "LEPTOS_JS_MINIFY" => conf.js_minify = val.parse()?,
             "SERVER_FN_PREFIX" => conf.server_fn_prefix = Some(val),
             "DISABLE_SERVER_FN_HASH" => conf.disable_server_fn_hash = true,
