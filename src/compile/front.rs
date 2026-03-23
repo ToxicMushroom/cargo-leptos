@@ -1,16 +1,8 @@
 use super::ChangeSet;
 use crate::{
-    config::Project,
-    ext::{
-        eyre::AnyhowCompatWrapErr,
-        fs,
-        sync::{wait_interruptible, wait_piped_interruptible, CommandResult, OutputExt},
-        Exe, PathBufExt,
-    },
-    internal_prelude::*,
-    logger::GRAY,
-    signal::{Interrupt, Outcome, Product},
-    wasm_split_tools,
+    compile::spawn_cargo_log_writer, config::Project, ext::{
+        Exe, PathBufExt, eyre::AnyhowCompatWrapErr, fs, sync::{CommandResult, OutputExt, wait_interruptible, wait_piped_interruptible}
+    }, internal_prelude::*, logger::GRAY, signal::{Interrupt, Outcome, Product}, wasm_split_tools
 };
 use camino::{Utf8Path, Utf8PathBuf};
 use std::sync::Arc;
@@ -42,9 +34,18 @@ pub async fn front(
 
         fs::create_dir_all(&pkg_dir).await?;
 
-        let (envs, line, process) = front_cargo_process("build", true, &proj)?;
+        let (envs, line, mut process) = front_cargo_process("build", true, &proj)?;
+        let stdout = process.stdout.take().expect("stdout is not captured");
 
+        let read_stdout: JoinHandle<std::io::Result<()>> = spawn_cargo_log_writer(
+            stdout,
+            proj.bin.stdout_file.clone(),
+            proj.bin.target_dir.clone(),
+        );
+        
         debug!("Running {}", GRAY.paint(&line));
+        
+        let _ = read_stdout.await?;
         match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
             CommandResult::Interrupted => return Ok(Outcome::Stopped),
             CommandResult::Failure(_) => return Ok(Outcome::Failed),

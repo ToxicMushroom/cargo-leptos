@@ -1,7 +1,8 @@
-use std::sync::Arc;
+use std::{process::Stdio, sync::Arc};
 
 use super::ChangeSet;
 use crate::{
+    compile::spawn_cargo_log_writer,
     config::Project,
     ext::sync::{wait_interruptible, CommandResult},
     internal_prelude::*,
@@ -26,29 +27,39 @@ pub async fn server(
             return Ok(Outcome::Success(Product::None));
         }
 
-        let (envs, line, process) = server_cargo_process("build", &proj)?;
-        debug!("CARGO SERVER COMMAND: {:?}", process);
-        match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
-            CommandResult::Success(_) => {
-                debug!("Cargo envs: {}", GRAY.paint(envs));
-                info!("Cargo finished {}", GRAY.paint(line));
+        let (envs, line, mut process) = server_cargo_process("build", &proj)?;
+        let stdout = process.stdout.take().expect("stdout is not captured");
 
-                let changed = proj
-                    .site
-                    .did_external_file_change(&proj.bin.exe_file)
-                    .await
-                    .dot()?;
-                if changed {
-                    debug!("Cargo server bin changed");
-                    Ok(Outcome::Success(Product::Server))
-                } else {
-                    debug!("Cargo server bin unchanged");
-                    Ok(Outcome::Success(Product::None))
+        let read_stdout: JoinHandle<std::io::Result<()>> = spawn_cargo_log_writer(
+            stdout,
+            proj.bin.stdout_file.clone(),
+            proj.bin.target_dir.clone(),
+        );
+        debug!("CARGO SERVER COMMAND: {:?}", process);
+        let process_result =
+            match wait_interruptible("Cargo", process, Interrupt::subscribe_any()).await? {
+                CommandResult::Success(_) => {
+                    debug!("Cargo envs: {}", GRAY.paint(envs));
+                    info!("Cargo finished {}", GRAY.paint(line));
+
+                    let changed = proj
+                        .site
+                        .did_external_file_change(&proj.bin.exe_file)
+                        .await
+                        .dot()?;
+                    if changed {
+                        debug!("Cargo server bin changed");
+                        Ok(Outcome::Success(Product::Server))
+                    } else {
+                        debug!("Cargo server bin unchanged");
+                        Ok(Outcome::Success(Product::None))
+                    }
                 }
-            }
-            CommandResult::Interrupted => Ok(Outcome::Stopped),
-            CommandResult::Failure(_) => Ok(Outcome::Failed),
-        }
+                CommandResult::Interrupted => Ok(Outcome::Stopped),
+                CommandResult::Failure(_) => Ok(Outcome::Failed),
+            };
+        let _ = read_stdout.await?;
+        process_result
     })
 }
 
@@ -72,6 +83,9 @@ pub fn server_cargo_process_with_args(
         .next()
         .expect("Failed to get bin command. This should default to cargo");
     let mut command: Command = Command::new(cargo_command);
+    if proj.bin.stdout_file.is_some() {
+        command.stdout(Stdio::piped());
+    }
 
     let args: Vec<String> = command_iter.collect();
     command.args(args);

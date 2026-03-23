@@ -22,6 +22,7 @@ pub struct BinPackage {
     pub target_dir: Option<String>,
     pub cargo_command: Option<String>,
     pub cargo_args: Option<Vec<String>>,
+    pub stdout_file: Option<Utf8PathBuf>,
     pub bin_args: Option<Vec<String>>,
 }
 
@@ -129,6 +130,11 @@ impl BinPackage {
             .clone()
             .or_else(|| config.bin_cargo_args.clone());
 
+        let stdout_file = config
+            .bin_cargo_stdout_path
+            .as_ref()
+            .map(|dir| dir.into());
+        
         debug!("BEFORE BIN {:?}", config.bin_cargo_command);
         Ok(Self {
             name,
@@ -145,6 +151,7 @@ impl BinPackage {
             cargo_command: config.bin_cargo_command.clone(),
             cargo_args,
             bin_args: bin_args.map(ToOwned::to_owned),
+            stdout_file,
         })
     }
 }

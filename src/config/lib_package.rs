@@ -24,6 +24,7 @@ pub struct LibPackage {
     pub front_target_path: Utf8PathBuf,
     pub profile: Profile,
     pub cargo_args: Option<Vec<String>>,
+    pub stdout_file: Option<Utf8PathBuf>
 }
 
 impl LibPackage {
@@ -108,6 +109,11 @@ impl LibPackage {
             .clone()
             .or_else(|| config.lib_cargo_args.clone());
 
+        let stdout_file = config
+            .lib_cargo_stdout_path
+            .as_ref()
+            .map(|dir| dir.into());
+        
         Ok(Self {
             name,
             abs_dir,
@@ -121,6 +127,7 @@ impl LibPackage {
             front_target_path,
             profile,
             cargo_args,
+            stdout_file
         })
     }
 }
