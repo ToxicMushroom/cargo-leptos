@@ -1,4 +1,3 @@
-use cargo_generate::{generate, GenerateArgs, TemplatePath};
 use clap::{ArgGroup, Args};
 
 use crate::internal_prelude::*;
@@ -53,57 +52,6 @@ pub struct NewCommand {
 
 impl NewCommand {
     pub fn run(self) -> Result<()> {
-        let Self {
-            git,
-            branch,
-            tag,
-            path,
-            name,
-            force,
-            verbose,
-            init,
-        } = self;
-        let args = GenerateArgs {
-            template_path: TemplatePath {
-                git: absolute_git_url(git),
-                branch,
-                tag,
-                path,
-                ..Default::default()
-            },
-            name,
-            force,
-            verbose,
-            init,
-            ..Default::default()
-        };
-
-        generate(args).dot_anyhow()?;
-
         Ok(())
     }
-}
-
-/// Workaround to support short `new --git leptos-rs/start` command when behind Git proxy.
-/// See https://github.com/cargo-generate/cargo-generate/issues/752.
-fn absolute_git_url(url: Option<String>) -> Option<String> {
-    url.map(|url| match url.as_str() {
-        "start-trunk" | "leptos-rs/start-trunk" => format_leptos_starter_url("start-trunk"),
-        "start-actix" | "leptos-rs/start" | "leptos-rs/start-actix" => {
-            format_leptos_starter_url("start-actix")
-        }
-        "start-axum" | "leptos-rs/start-axum" => format_leptos_starter_url("start-axum"),
-        "start-axum-workspace" | "leptos-rs/start-axum-workspace" => {
-            format_leptos_starter_url("start-axum-workspace")
-        }
-        "start-aws" | "leptos-rs/start-aws" => format_leptos_starter_url("start-aws"),
-        "start-spin" | "leptos-rs/start-spin" => format_leptos_starter_url("start-spin"),
-        "start-csr" | "leptos-rs/start-csr" => format_leptos_starter_url("start-csr"),
-        "start-wasi" | "leptos-rs/start-wasi" => format_leptos_starter_url("start-wasi"),
-        _ => url,
-    })
-}
-
-fn format_leptos_starter_url(repo: &str) -> String {
-    format!("https://github.com/leptos-rs/{repo}")
 }
