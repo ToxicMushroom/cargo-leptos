@@ -63,13 +63,13 @@ fn build_sass(proj: &Arc<Project>) -> JoinHandle<Result<Outcome<String>>> {
         match style_file.source.extension() {
             Some("sass") | Some("scss") => compile_sass(style_file, proj.release)
                 .await
-                .wrap_err(format!("compile sass/scss: {}", &style_file)),
+                .wrap_err(format!("compile sass/scss: {}", style_file)),
             Some("css") => Ok(Outcome::Success(if proj.style.bundle {
                 bundle_css(style_file.source.as_ref())?
             } else {
                 fs::read_to_string(&style_file.source).await.dot()?
             })),
-            _ => bail!("Not a css/sass/scss style file: {}", &style_file),
+            _ => bail!("Not a css/sass/scss style file: {}", style_file),
         }
     })
 }
